@@ -2,21 +2,19 @@ package chat.tuples;
 
 import javax.swing.JTextArea;
 
+import chat.enums.SpyWords;
 import net.jini.core.lease.Lease;
 import net.jini.space.JavaSpace;
 
-public class MessageListener extends Thread {
+public class SpyListener extends Thread {
 
 	JavaSpace space;
 
 	JTextArea chatArea;
 
-	String username;
-
-	public MessageListener(JavaSpace space, JTextArea chatArea, String username) {
+	public SpyListener(JavaSpace space, JTextArea chatArea) {
 		this.space = space;
 		this.chatArea = chatArea;
-		this.username = username;
 	}
 
 	@Override
@@ -34,20 +32,24 @@ public class MessageListener extends Thread {
 						chatArea.append(msg.content);
 						chatArea.setCaretPosition(chatArea.getLineStartOffset(chatArea.getLineCount() - 1));
 					} else {
-						if (!msg.username.equalsIgnoreCase(username) && !msg.isPrivate) {
+						if (!msg.isPrivate) {
 							chatArea.append("\n" + msg.username + ": " + msg.content);
 							chatArea.setCaretPosition(chatArea.getLineStartOffset(chatArea.getLineCount() - 1));
 						}
 
-						if (!msg.username.equalsIgnoreCase(username) && msg.isPrivate) {
-							if (msg.pmReceiver.equalsIgnoreCase(username)) {
-								chatArea.append(
-										"\n** Mensagem Privada de " + msg.pmSender + ": " + msg.content + " **");
-								chatArea.setCaretPosition(chatArea.getLineStartOffset(chatArea.getLineCount() - 1));
-							}
-						}	
+						if (msg.isPrivate) {
+
+							chatArea.append("\n** MP de " + msg.pmSender + " para " + msg.pmReceiver + ": " + msg.content + " **");
+							chatArea.setCaretPosition(chatArea.getLineStartOffset(chatArea.getLineCount() - 1));
+
+						}
+
+						if (SpyWords.contains(msg.content)) {
+							chatArea.append("\n----- PALAVRA SUSPEITA DETECTADA ENVIANDO PARA O SERVIDOR -----\n");
+						}
+
 					}
-					
+
 					Thread.sleep(10);
 				}
 
