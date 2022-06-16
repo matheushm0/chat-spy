@@ -6,6 +6,7 @@ import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.rmi.Naming;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -21,8 +22,10 @@ import javax.swing.text.DefaultCaret;
 import chat.tuples.Lookup;
 import chat.tuples.Message;
 import chat.tuples.Spy;
+import chat.tuples.User;
 import net.jini.core.lease.Lease;
 import net.jini.space.JavaSpace;
+import rmi.ServerInterface;
 
 public class SpyWindow extends JFrame {
 	private static final long serialVersionUID = 1L;
@@ -31,6 +34,7 @@ public class SpyWindow extends JFrame {
 	
 	//CONNECTION
 	private JavaSpace space;
+	private ServerInterface serverInterface;
 	
 	//UI	
 	private JTextArea chatArea;
@@ -49,7 +53,8 @@ public class SpyWindow extends JFrame {
 		setUpGUI();
 		setUpAddWords();
 		
-		startThread();			
+		startThread();	
+		connectToServer();
 	}
 
 	private void initComponents() {		
@@ -75,7 +80,7 @@ public class SpyWindow extends JFrame {
 			e.printStackTrace();
 		}
 	}
-	
+
 	private void setUpGUI() {
 		this.setResizable(false);
 		this.setSize(580, 530);
@@ -104,8 +109,8 @@ public class SpyWindow extends JFrame {
 		
 		chatArea.append("\n----- Bem-vindo a sala do espião -----" 
 				+ "\n----- Nenhum usuário sabe que você está aqui -----"
-				+ "\n----- Para ver a lista de palavras suspeitas digite '/palavras' -----\n");
-//				+ "\n----- Para ver a lista de usuários conectados digite '/usuarios' -----\n");
+				+ "\n----- Para ver a lista de palavras suspeitas digite '/palavras' -----"
+				+ "\n----- Para ver a lista de usuários conectados digite '/usuarios' -----\n");
 			
 		this.add(chatScroll);
 		this.add(addWordsTextField);
@@ -137,15 +142,19 @@ public class SpyWindow extends JFrame {
 	
 	private void addWordToList() {
 		String word = addWordsTextField.getText();
-		
+
 		addWordsTextField.setText("");
-		
+
 		if (word != null && !word.isEmpty()) {
-			
+
+			if (word.startsWith("/usuarios")) {
+				retrieveUsersList();
+			}
+
 			if (word.startsWith("/palavras")) {
 				StringBuilder sb = new StringBuilder();
 
-				sb.append("\n\n----- Palavras Monitoradas -----\n");
+				sb.append("\n----- Palavras Monitoradas -----\n");
 
 				for (String wordToSpy : wordsToSpy) {
 					sb.append("\n" + wordToSpy);
@@ -155,16 +164,64 @@ public class SpyWindow extends JFrame {
 
 				chatArea.append(sb.toString());
 			}
-			else {
-				this.wordsToSpy.add(word);
-				chatArea.append("\n\n----- A palavra " + word + " foi adicionada a lista de palavras monitoradas -----\n");	
+
+			if (!word.startsWith("/palavras") && !word.startsWith("/usuarios")) {
+				if (!wordsToSpy.contains(word)) {
+					this.wordsToSpy.add(word);
+					chatArea.append(
+							"\n----- A palavra " + word + " foi adicionada a lista de palavras monitoradas -----");
+				} else {
+					chatArea.append("\n----- A palavra " + word + " ja existe na lista de palavras monitoradas -----");
+				}
 			}
+
+		}
+
+		try {
+			chatArea.setCaretPosition(chatArea.getLineStartOffset(chatArea.getLineCount() - 1));
+		} catch (BadLocationException e) {
+			e.printStackTrace();
+		}
+
+	}
+	
+	private void retrieveUsersList() {		
+		User template = new User();
 		
-			try {
-				chatArea.setCaretPosition(chatArea.getLineStartOffset(chatArea.getLineCount() - 1));
-			} catch (BadLocationException e) {
-				e.printStackTrace();
+		User user;
+		
+		List<User> users = new ArrayList<User>();
+		
+		try {
+			while (true) {
+				user = (User) space.take(template, null, 1000);
+				
+				if (user != null) {
+					users.add(user);
+				} else {					
+					break;
+				}	
 			}
+			
+			if (!users.isEmpty()) {
+				StringBuilder sb = new StringBuilder();
+				
+				sb.append("\n\n----- Usuarios Conectados -----\n");
+				
+				
+				for (User connectedUser : users) {	
+					sb.append("\n" + connectedUser.name);
+					
+					space.write(connectedUser, null, Lease.FOREVER);
+				}
+				
+				sb.append("\n\n-----------------------------------------\n");
+				
+				chatArea.append(sb.toString());
+			} 
+			
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
 	}
 	
@@ -172,6 +229,17 @@ public class SpyWindow extends JFrame {
 		SpyListener spyListener = new SpyListener(space, chatArea);
 		spyListener.start();
 	}
+	
+	private void connectToServer() {
+		try {
+			this.serverInterface = (ServerInterface) Naming.lookup("//localhost/ServerRef");
+			System.out.println("Connected to Server");		
+		} 
+		catch (Exception e) {
+			System.out.println("Exception - connectToServer()");
+		}
+	}
+	
 	
 	private class SpyListener extends Thread {
 		JavaSpace space;
@@ -210,9 +278,13 @@ public class SpyWindow extends JFrame {
 
 							}
 
-							if (wordsToSpy.contains(spy.content)) {
-								chatArea.append("\n\n----- PALAVRA SUSPEITA DETECTADA ENVIANDO PARA O SERVIDOR -----\n");
-								chatArea.setCaretPosition(chatArea.getLineStartOffset(chatArea.getLineCount() - 1));
+							for (String listItem : wordsToSpy) {
+								if (spy.content.contains(listItem)) {
+									chatArea.append("\n\n----- PALAVRA SUSPEITA DETECTADA ENVIANDO PARA O SERVIDOR -----\n");
+									chatArea.setCaretPosition(chatArea.getLineStartOffset(chatArea.getLineCount() - 1));
+									
+									serverInterface.sendMessageToTopic(wordsToSpy.toString(), spy.username, spy.content);
+								}
 							}
 							
 							Message msg = new Message();

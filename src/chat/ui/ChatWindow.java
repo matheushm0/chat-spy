@@ -8,6 +8,8 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -92,8 +94,8 @@ public class ChatWindow extends JFrame {
 		chatButton.setBounds(435, 430, 80, 39);
 		
 		chatArea.append("\n----- Bem-vindo a sala de chat -----" 
-				+ "\n----- Para enviar mensagens privadas digite '/p nomeDoUsuario mensagem' -----\n");
-//				+ "\n----- Para ver a lista de usuários conectados digite '/usuarios' -----\n");
+				+ "\n----- Para enviar mensagens privadas digite '/p nomeDoUsuario mensagem' -----"
+				+ "\n----- Para ver a lista de usuários conectados digite '/usuarios' -----\n");
 		
 		try {
 			Spy spy = new Spy();
@@ -146,7 +148,7 @@ public class ChatWindow extends JFrame {
 			if (message.startsWith("/usuarios")) {
 				chatArea.append("\n" + username + ": " + message);
 
-//				retrieveUsersList();				
+				retrieveUsersList();				
 			}
 			else {
 				Spy spy = new Spy();
@@ -231,44 +233,43 @@ public class ChatWindow extends JFrame {
 		}		
 	}
 	
-//	private void retrieveUsersList() {		
-//		User template = new User();
-//		template.roomName = roomName;
-//		
-//		User user;
-//		
-//		List<User> users = new ArrayList<User>();
-//		
-//		try {
-//			while (true) {
-//				user = (User) space.take(template, null, 1000);
-//				
-//				if (user != null) {
-//					users.add(user);
-//				} else {					
-//					break;
-//				}	
-//			}
-//			
-//			if (!users.isEmpty()) {
-//				StringBuilder sb = new StringBuilder();
-//				
-//				sb.append("\n\n----- Usuarios Conectados -----\n");
-//				
-//				
-//				for (User connectedUser : users) {	
-//					sb.append("\n" + connectedUser.name);
-//					
-//					space.write(connectedUser, null, Lease.FOREVER);
-//				}
-//				
-//				sb.append("\n\n-----------------------------------------\n");
-//				
-//				chatArea.append(sb.toString());
-//			} 
-//			
-//		} catch (Exception e) {
-//			e.printStackTrace();
-//		}
-//	}
+	private void retrieveUsersList() {		
+		User template = new User();
+		
+		User user;
+		
+		List<User> users = new ArrayList<User>();
+		
+		try {
+			while (true) {
+				user = (User) space.take(template, null, 1000);
+				
+				if (user != null) {
+					users.add(user);
+				} else {					
+					break;
+				}	
+			}
+			
+			if (!users.isEmpty()) {
+				StringBuilder sb = new StringBuilder();
+				
+				sb.append("\n\n----- Usuarios Conectados -----\n");
+				
+				
+				for (User connectedUser : users) {	
+					sb.append("\n" + connectedUser.name);
+					
+					space.write(connectedUser, null, Lease.FOREVER);
+				}
+				
+				sb.append("\n\n-----------------------------------------\n");
+				
+				chatArea.append(sb.toString());
+			} 
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
 }

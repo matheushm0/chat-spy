@@ -38,5 +38,6 @@
 	<classpathentry kind="lib" path="lib/start.jar"/>
 	<classpathentry kind="lib" path="lib/sun-util.jar"/>
 	<classpathentry kind="lib" path="lib/tools.jar"/>
+	<classpathentry kind="lib" path="lib/activemq-all-5.16.4.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
