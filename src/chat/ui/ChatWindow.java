@@ -18,8 +18,8 @@ import javax.swing.JTextField;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.DefaultCaret;
 
-import chat.tuples.Message;
 import chat.tuples.MessageListener;
+import chat.tuples.Spy;
 import chat.tuples.User;
 import net.jini.core.lease.Lease;
 import net.jini.space.JavaSpace;
@@ -92,19 +92,19 @@ public class ChatWindow extends JFrame {
 		chatButton.setBounds(435, 430, 80, 39);
 		
 		chatArea.append("\n----- Bem-vindo a sala de chat -----" 
-				+ "\n----- Para enviar mensagens privadas digite '/p nomeDoUsuario mensagem' -----"
-				+ "\n----- Para ver a lista de usuários conectados digite '/usuarios' -----\n");
+				+ "\n----- Para enviar mensagens privadas digite '/p nomeDoUsuario mensagem' -----\n");
+//				+ "\n----- Para ver a lista de usuários conectados digite '/usuarios' -----\n");
 		
 		try {
-			Message msg = new Message();
-			msg.username = username;
-			msg.type = "connected";
-			msg.content = "\n----- " + username + " se conectou a sala! -----";
+			Spy spy = new Spy();
+			spy.username = username;
+			spy.type = "connected";
+			spy.content = "\n----- " + username + " se conectou a sala! -----";
 			
-			space.write(msg, null, Lease.FOREVER);
+			space.write(spy, null, Lease.FOREVER);
 			
-			Message msgTemplate = new Message();
-			space.take(msgTemplate, null, Lease.FOREVER);
+			Spy template = new Spy();
+			space.take(template, null, Lease.FOREVER);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -149,37 +149,37 @@ public class ChatWindow extends JFrame {
 //				retrieveUsersList();				
 			}
 			else {
-				Message msg = new Message();
+				Spy spy = new Spy();
 				
-				msg.username = username;
-				msg.type = "chat";
+				spy.username = username;
+				spy.type = "chat";
 				
 				if (message.startsWith("/p")) {
-					msg.isPrivate = true;
-					msg.pmSender = username;
+					spy.isPrivate = true;
+					spy.pmSender = username;
 					
 					String[] sp = message.split(" ", 3);
 					
 					try {
-						msg.pmReceiver = sp[1];
-						msg.content = sp[2];
+						spy.pmReceiver = sp[1];
+						spy.content = sp[2];
 						
 						chatArea.append("\n** Mensagem Privada enviada para " + sp[1] + ": " + sp[2] + " **");
 					} catch (Exception e) {
-						msg.content = message;
-						msg.isPrivate = false;
+						spy.content = message;
+						spy.isPrivate = false;
 					}
 				}
 				else {
-					msg.content = message;
-					msg.isPrivate = false;	
+					spy.content = message;
+					spy.isPrivate = false;	
 					
 					chatArea.append("\n" + username + ": " + message);
 				}
 				
-				space.write(msg, null, Lease.FOREVER);
+				space.write(spy, null, Lease.FOREVER);
 				
-				Message template = new Message();
+				Spy template = new Spy();
 				space.take(template, null, Lease.FOREVER);
 			}
 		} catch (Exception e) {
@@ -215,15 +215,15 @@ public class ChatWindow extends JFrame {
 			
 			if (user != null) {
 			
-				Message msg = new Message();
-				msg.username = username;
-				msg.type = "disconnected";
-				msg.content = "\n----- " + username + " se desconectou da sala! -----";
+				Spy spy = new Spy();
+				spy.username = username;
+				spy.type = "disconnected";
+				spy.content = "\n----- " + username + " se desconectou da sala! -----";
 				
-				space.write(msg, null, Lease.FOREVER);
+				space.write(spy, null, Lease.FOREVER);
 				
-				Message msgTemplate = new Message();
-				space.take(msgTemplate, null, Lease.FOREVER);
+				Spy spyTemplate = new Spy();
+				space.take(spyTemplate, null, Lease.FOREVER);
 			}
 			
 		} catch (Exception e) {
